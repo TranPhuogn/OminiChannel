@@ -1,69 +1,84 @@
-# KP Luxury Perfume - Omnichannel Platform
+# KP Luxury Perfume - Omnichannel Platform (v2.0)
 
-Trang web bán hàng đa kênh cao cấp cho thương hiệu nước hoa **KP Luxury**. Dự án kết hợp giữa kiến trúc backend mạnh mẽ (áp dụng 10 Design Patterns) và giao diện frontend sang trọng, mang lại trải nghiệm mua sắm đẳng cấp.
+Trang web bán hàng đa kênh cao cấp cho thương hiệu nước hoa **KP Luxury**. Dự án kết hợp giữa kiến trúc backend mạnh mẽ (áp dụng 10 Design Patterns) và giao diện quản trị chuyên nghiệp, mang lại trải nghiệm vận hành và mua sắm đẳng cấp.
 
-## 🚀 Tính năng nổi bật
+---
 
--   **Giao diện Luxury Dark Mode**: Thiết kế sang trọng với tông màu Vàng kim (Gold) và Đen (Black), tối ưu trải nghiệm thị giác cho dòng sản phẩm cao cấp.
--   **Trải nghiệm Đa kênh (Omnichannel)**: 
-    -   Đồng bộ hóa sản phẩm và đơn hàng giữa Website, Shopee, TikTok và Lazada.
-    -   **In-store Pickup**: Lựa chọn nhận hàng trực tiếp tại cửa hàng giúp khách hàng tiết kiệm thời gian và phí vận chuyển.
--   **Chi tiết Sản phẩm Chuyên sâu**: 
-    -   Thông tin đầy đủ về Tầng hương (Top, Middle, Base notes), Xuất xứ, Nồng độ và Câu chuyện thương hiệu.
-    -   Chọn dung tích (ML) linh hoạt với giá cập nhật theo thời gian thực.
--   **Hệ thống Đánh giá (Reviews)**: Phần bình luận và đánh giá sao được lưu trữ bền vững tại backend, giúp tăng độ tin cậy cho sản phẩm.
--   **Thông báo Toast**: Hệ thống thông báo tinh tế thay thế cho các alert mặc định, mang lại cảm giác mượt mà.
+## 🎨 Giao diện & Trải nghiệm
 
-## 🛠 Công nghệ sử dụng
+### 1. Luxury Storefront (Dành cho khách hàng)
+- **Thiết kế Luxury Dark Mode**: Tông màu Vàng kim (Gold) và Đen (Black) sang trọng.
+- **Trải nghiệm mua sắm mượt mà**: 
+  - Hiệu ứng Glassmorphism hiện đại.
+  - Fragrance Finder: Công cụ tìm kiếm mùi hương phù hợp.
+  - In-store Pickup: Đặt hàng nhận tại showroom nhanh chóng.
+- **Chi tiết sản phẩm trực quan**: Hiển thị tháp tầng hương (Top/Middle/Base notes) sống động.
 
--   **Backend**: ASP.NET Core Web API 8.0 (C#)
--   **Database**: SQL Server (với Entity Framework Core)
--   **Frontend**: React.js 18 + Vite
--   **Styling**: Vanilla CSS (Custom Glassmorphism & Jewelry Theme)
--   **API**: RESTful API với tích hợp Swagger để kiểm thử.
+### 2. Professional Admin Dashboard (Dành cho quản trị)
+- **Bố cục Grid-based chuẩn**: Sidebar cố định bên trái, tách biệt hoàn toàn với không gian làm việc.
+- **9 Module quản trị cốt lõi**:
+  - **Dashboard**: Tổng quan doanh thu, đơn hàng và biểu đồ xu hướng.
+  - **Sản phẩm (Product)**: Quản lý thuộc tính cao cấp (nhóm mùi, dung tích, tầng hương).
+  - **Đơn hàng (Order)**: Quy trình xử lý đơn hàng đa trạng thái.
+  - **Kho hàng (Inventory)**: Theo dõi tồn kho đa chi nhánh.
+  - **Khách hàng (CRM)**: Quản lý hồ sơ và lịch sử mua sắm.
+  - **Marketing, CMS, RBAC, Settings**: Các module bổ trợ chuyên sâu.
 
-## 🏗 10 Design Patterns đã áp dụng
+---
 
-Hệ thống được xây dựng dựa trên các nguyên lý kiến trúc phần mềm hiện đại để đảm bảo sự linh hoạt:
+## 🏗 Kiến trúc & Công nghệ
 
-1.  **Repository Pattern**: Tách biệt logic truy cập dữ liệu thông qua các interface.
-2.  **Unit of Work**: Đảm bảo tính nhất quán của dữ liệu (Transaction) khi thực hiện nhiều thao tác cùng lúc.
-3.  **Dependency Injection**: Tăng cường khả năng kiểm thử và bảo trì hệ thống.
-4.  **Facade Pattern**: Đơn giản hóa các quy trình phức tạp thông qua lớp `OrderFacade`.
-5.  **Strategy Pattern**: Xử lý linh hoạt các phương thức thanh toán (Credit Card, COD, etc.).
-6.  **Decorator Pattern**: Tính toán giá sản phẩm động (Cộng thêm thuế, áp dụng giảm giá).
-7.  **Adapter Pattern**: Chuẩn hóa dữ liệu từ các nền tảng khác nhau (Shopee, TikTok, Lazada) về hệ thống chung.
-8.  **Observer Pattern**: Tự động thông báo và đồng bộ hóa tồn kho khi có sự thay đổi.
-9.  **Factory Method**: Khởi tạo sản phẩm theo phân loại chuẩn xác (`PerfumeFactory`).
-10. **Singleton Pattern**: Quản lý cấu hình toàn cục và cài đặt thương hiệu một cách duy nhất.
+### Tech Stack
+-   **Backend**: ASP.NET Core 8.0, Entity Framework Core.
+-   **Database**: SQL Server (Schema đã tối ưu cho Omnichannel).
+-   **Frontend**: React.js 18 (Vite), Vanilla CSS (Modern Luxury UI).
 
-## 📁 Cấu trúc thư mục
+### 10 Design Patterns đã áp dụng
+1.  **Repository Pattern**: Tách biệt logic truy cập dữ liệu.
+2.  **Unit of Work**: Quản lý Transaction dữ liệu nhất quán.
+3.  **Dependency Injection**: Linh hoạt trong việc mở rộng và bảo trì.
+4.  **Facade Pattern**: Đơn giản hóa quy trình đặt hàng phức tạp.
+5.  **Strategy Pattern**: Tùy biến linh hoạt phương thức thanh toán.
+6.  **Decorator Pattern**: Tính toán giá động và khuyến mãi.
+7.  **Adapter Pattern**: Chuẩn hóa dữ liệu từ Shopee, Lazada... về hệ thống.
+8.  **Observer Pattern**: Tự động đồng bộ tồn kho thời gian thực.
+9.  **Factory Method**: Khởi tạo thực thể sản phẩm chuẩn xác.
+10. **Singleton Pattern**: Quản lý cấu hình thương hiệu duy nhất.
 
+---
+
+## ⚙️ Hướng dẫn khởi chạy
+
+Dự án đã được cấu hình để chạy đồng nhất trên một cổng duy nhất thông qua ASP.NET Core Static Files.
+
+### 1. Cấu hình Database
+- Đảm bảo SQL Server đang chạy.
+- Chạy script `sample_data.sql` để khởi tạo dữ liệu mẫu và schema cần thiết.
+
+### 2. Khởi chạy hệ thống
+Mở terminal tại thư mục gốc và chạy:
+```bash
+dotnet run
+```
+Hệ thống sẽ khả dụng tại:
+- **Trang bán hàng**: `http://localhost:5285/`
+- **Trang Quản trị (Admin)**: `http://localhost:5285/Admin`
+
+*(Lưu ý: Nếu thay đổi frontend, hãy chạy `npm run build` trong thư mục `frontend` và copy kết quả vào `wwwroot` của backend).*
+
+---
+
+## 📁 Cấu trúc thư mục chính
 ```text
 Omnichannel/
-├── Controllers/       # Các API Endpoints (Perfumes, Orders, Comments...)
-├── Infrastructure/    # Triển khai DbContext, Unit of Work, Security Proxy
-├── Models/            # Các thực thể (Entity) và DTOs
-├── Repositories/      # Logic truy xuất dữ liệu (Sql repositories)
-├── Services/          # Implement các Design Patterns (Facade, Adapter...)
-├── frontend/          # Mã nguồn React UI (Vite)
-│   ├── src/           # Components, Logic và Styles (CSS Modular)
-│   └── public/        # Tài nguyên tĩnh
-└── Program.cs         # Cấu hình Services và Pipeline
+├── Controllers/       # API Endpoints (Perfumes, Orders, Statistics...)
+├── Infrastructure/    # DbContext, UnitOfWork, Identity.
+├── Models/            # Entity Framework Models & DTOs.
+├── Repositories/      # Data Access Layer (Sql Repositories).
+├── Services/          # Business Logic (Design Patterns implementations).
+├── wwwroot/           # Production Build của Frontend (đã deploy).
+└── frontend/          # Mã nguồn React UI (Vite dev environment).
 ```
 
-## ⚙️ Hướng dẫn cài đặt
-
-### 1. Chạy Backend
-- Mở file `Omnichannel.sln` bằng Visual Studio.
-- Đảm bảo database đã được khởi tạo (có thể chạy script `omnichannel_tables.sql` nếu cần).
-- Nhấn **F5** để chạy API. Cổng mặc định thường là `http://localhost:5285`.
-
-### 2. Chạy Frontend
-- Di chuyển vào thư mục frontend: `cd frontend`
-- Cài đặt thư viện: `npm install`
-- Chạy ứng dụng: `npm run dev`
-- Truy cập: `http://localhost:5173`
-
-## 📞 Liên hệ
-**KP Luxury Perfume** - *Tinh hoa nghệ thuật mùi hương vượt thời gian.*
+---
+**KP Luxury Perfume** - *Nâng tầm đẳng cấp vận hành đa kênh.*
