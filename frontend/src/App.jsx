@@ -62,7 +62,7 @@ function App() {
   const [filterGender, setFilterGender] = useState('All')
   const [filterFamily, setFilterFamily] = useState('All')
   const [filterConcentration, setFilterConcentration] = useState('All')
-  const [priceRange, setPriceRange] = useState(10000000)
+  const [priceRange, setPriceRange] = useState(50000000)
   const toastId = useRef(0)
 
   // Checkout
@@ -103,6 +103,13 @@ function App() {
 
     const handleScroll = () => setScrolled(window.scrollY > 50)
     window.addEventListener('scroll', handleScroll)
+    
+    // Sync page state with URL path
+    const path = window.location.pathname.toLowerCase();
+    if (path === '/admin') {
+      setPage('admin');
+    }
+
     refreshProducts()
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
@@ -307,9 +314,9 @@ function App() {
   const filteredProducts = products
     .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
     .filter(p => filterGender === 'All' || p.gender === filterGender)
-    .filter(p => filterFamily === 'All' || p.description.includes(filterFamily))
-    .filter(p => filterConcentration === 'All' || (p.concentration && p.concentration.includes(filterConcentration)))
-    .filter(p => p.price <= priceRange)
+    .filter(p => filterFamily === 'All' || (p.description + p.name).toLowerCase().includes(filterFamily.toLowerCase()))
+    .filter(p => filterConcentration === 'All' || (p.concentration && p.concentration.toLowerCase().includes(filterConcentration.toLowerCase())))
+    .filter(p => p.price * 24000 <= priceRange)
     .sort((a, b) => {
       if (sortBy === 'price-asc') return a.price - b.price
       if (sortBy === 'price-desc') return b.price - a.price
@@ -382,8 +389,9 @@ function App() {
         ))}
       </div>
 
-      {/* === NAVBAR === */}
-      <nav className={scrolled ? 'scrolled' : ''}>
+      {/* === NAVBAR (Store Only) === */}
+      {page !== 'admin' && (
+        <nav className={scrolled ? 'scrolled' : ''}>
         <div className="container">
           <a href="#" className="logo" onClick={e => { e.preventDefault(); setPage('home') }}>KP LUXURY</a>
           <button className="mobile-menu-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>☰</button>
@@ -415,11 +423,7 @@ function App() {
             <a href="#" onClick={e => { e.preventDefault(); setPage('favorites'); setIsMobileMenuOpen(false); }}>
               ❤️ Yêu Thích ({favorites.length})
             </a>
-            {isAdmin && (
-              <a href="#" onClick={e => { e.preventDefault(); setPage('admin'); setIsMobileMenuOpen(false); }}>
-                🛠 Admin
-              </a>
-            )}
+            {/* Removed Admin link from public navigation as requested */}
             {user ? (
               <>
                 <span style={{ color: 'var(--accent-gold)', marginLeft: '1.5rem', fontSize: '0.85rem', textTransform: 'uppercase' }}>
@@ -436,6 +440,7 @@ function App() {
           </div>
         </div>
       </nav>
+      )}
 
       {/* === AUTH MODAL === */}
       <div className={`modal-overlay ${authModal ? 'active' : ''}`} onClick={() => setAuthModal(null)}>
@@ -1216,13 +1221,15 @@ function App() {
         )}
       </div>
 
-      {/* === FOOTER === */}
-      <footer style={{ padding: '6rem 0', textAlign: 'center', background: '#080808', borderTop: '1px solid #111' }}>
-        <div className="container">
-          <h2 className="brand-font" style={{ color: 'var(--accent-gold)', letterSpacing: '4px', marginBottom: '1.5rem' }}>KP LUXURY</h2>
-          <p style={{ color: '#666', fontSize: '0.9rem' }}>&copy; 2026 KP Luxury Perfume. Tinh hoa nghệ thuật mùi hương.</p>
-        </div>
-      </footer>
+      {/* === FOOTER (Store Only) === */}
+      {page !== 'admin' && (
+        <footer style={{ padding: '6rem 0', textAlign: 'center', background: '#080808', borderTop: '1px solid #111' }}>
+          <div className="container">
+            <h2 className="brand-font" style={{ color: 'var(--accent-gold)', letterSpacing: '4px', marginBottom: '1.5rem' }}>KP LUXURY</h2>
+            <p style={{ color: '#666', fontSize: '0.9rem' }}>&copy; 2026 KP Luxury Perfume. Tinh hoa nghệ thuật mùi hương.</p>
+          </div>
+        </footer>
+      )}
 
       {/* ============================================================ */}
       {/*                    PAGE: ADMIN DASHBOARD                      */}
@@ -1235,71 +1242,77 @@ function App() {
           setPage={setPage} 
         />
       )}
-      <button className="chatbot-toggle" onClick={() => setChatOpen(!chatOpen)}>
-        {chatOpen ? '✕' : '💬'}
-      </button>
-      {chatOpen && (
-        <div className="chatbot-widget">
-          <div className="chatbot-header">
-            <span>🤖 Trợ Lý Hương Thơm</span>
-            <button onClick={() => setChatOpen(false)}>✕</button>
-          </div>
-          <div className="chatbot-messages">
-            {chatMessages.map((msg, i) => (
-              <div key={i} className={`chat-msg ${msg.from}`}>{msg.text}</div>
-            ))}
-            <div ref={chatEndRef} />
-          </div>
-          <div className="chatbot-input">
-            <input type="text" placeholder="Nhập tin nhắn..." value={chatInput}
-              onChange={e => setChatInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSendChat()} />
-            <button onClick={handleSendChat}>📤</button>
-          </div>
-        </div>
+      {page !== 'admin' && (
+        <>
+          <button className="chatbot-toggle" onClick={() => setChatOpen(!chatOpen)}>
+            {chatOpen ? '✕' : '💬'}
+          </button>
+          {chatOpen && (
+            <div className="chatbot-widget">
+              <div className="chatbot-header">
+                <span>🤖 Trợ Lý Hương Thơm</span>
+                <button onClick={() => setChatOpen(false)}>✕</button>
+              </div>
+              <div className="chatbot-messages">
+                {chatMessages.map((msg, i) => (
+                  <div key={i} className={`chat-msg ${msg.from}`}>{msg.text}</div>
+                ))}
+                <div ref={chatEndRef} />
+              </div>
+              <form className="chatbot-input" onSubmit={e => { e.preventDefault(); handleSendChat() }}>
+                <input type="text" placeholder="Nhập tin nhắn..." value={chatInput}
+                  onChange={e => setChatInput(e.target.value)} />
+              </form>
+            </div>
+          )}
+        </>
       )}
-      {/* Modals for O2O */}
-      {showStockModal && (
-        <div className="modal-overlay" onClick={() => setShowStockModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-            <h3 className="brand-font" style={{ marginBottom: '1.5rem' }}>Tồn Kho Tại Cửa Hàng</h3>
-            <div className="store-list" style={{ display: 'grid', gap: '1rem' }}>
-              {[
-                { name: 'KP Luxury Quận 1', addr: '123 Lê Lợi, TP.HCM', stock: 'Có hàng' },
-                { name: 'KP Luxury Hoàn Kiếm', addr: '45 Hàng Bài, Hà Nội', stock: 'Có hàng' },
-                { name: 'KP Luxury Đà Nẵng', addr: '89 Bạch Đằng, Đà Nẵng', stock: 'Hết hàng' }
-              ].map(s => (
-                <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: '#111', borderRadius: '4px' }}>
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{s.name}</div>
-                    <div style={{ fontSize: '0.8rem', color: '#666' }}>{s.addr}</div>
-                  </div>
-                  <div style={{ color: s.stock === 'Có hàng' ? '#27ae60' : '#e74c3c', fontSize: '0.85rem' }}>{s.stock}</div>
+      {/* Modals for O2O (Store Only) */}
+      {page !== 'admin' && (
+        <>
+          {showStockModal && (
+            <div className="modal-overlay" onClick={() => setShowStockModal(false)}>
+              <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                <h3 className="brand-font" style={{ marginBottom: '1.5rem' }}>Tồn Kho Tại Cửa Hàng</h3>
+                <div className="store-list" style={{ display: 'grid', gap: '1rem' }}>
+                  {[
+                    { name: 'KP Luxury Quận 1', addr: '123 Lê Lợi, TP.HCM', stock: 'Có hàng' },
+                    { name: 'KP Luxury Hoàn Kiếm', addr: '45 Hàng Bài, Hà Nội', stock: 'Có hàng' },
+                    { name: 'KP Luxury Đà Nẵng', addr: '89 Bạch Đằng, Đà Nẵng', stock: 'Hết hàng' }
+                  ].map(s => (
+                    <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: '#111', borderRadius: '4px' }}>
+                      <div>
+                        <div style={{ fontWeight: 600 }}>{s.name}</div>
+                        <div style={{ fontSize: '0.8rem', color: '#666' }}>{s.addr}</div>
+                      </div>
+                      <div style={{ color: s.stock === 'Có hàng' ? '#27ae60' : '#e74c3c', fontSize: '0.85rem' }}>{s.stock}</div>
+                    </div>
+                  ))}
                 </div>
-              ))}
+                <button className="btn-gold" style={{ width: '100%', marginTop: '2rem' }} onClick={() => setShowStockModal(false)}>Đóng</button>
+              </div>
             </div>
-            <button className="btn-gold" style={{ width: '100%', marginTop: '2rem' }} onClick={() => setShowStockModal(false)}>Đóng</button>
-          </div>
-        </div>
-      )}
+          )}
 
-      {showBookingModal && (
-        <div className="modal-overlay" onClick={() => setShowBookingModal(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
-            <h3 className="brand-font" style={{ marginBottom: '1rem' }}>Đặt Lịch Hẹn Showroom</h3>
-            <p style={{ color: '#888', marginBottom: '2rem', fontSize: '0.9rem' }}>Trải nghiệm bộ sưu tập mùi hương cá nhân hóa cùng chuyên gia.</p>
-            <div className="form-group">
-              <input type="text" placeholder="Họ và tên" style={{ background: '#000', border: '1px solid #333', color: '#fff', width: '100%', padding: '0.8rem', marginBottom: '1rem' }} />
-              <input type="datetime-local" style={{ background: '#000', border: '1px solid #333', color: '#fff', width: '100%', padding: '0.8rem', marginBottom: '1rem' }} />
-              <select style={{ background: '#000', border: '1px solid #333', color: '#fff', width: '100%', padding: '0.8rem' }}>
-                <option>Chọn chi nhánh gần bạn</option>
-                <option>KP Luxury Quận 1, TP.HCM</option>
-                <option>KP Luxury Hoàn Kiếm, Hà Nội</option>
-              </select>
+          {showBookingModal && (
+            <div className="modal-overlay" onClick={() => setShowBookingModal(false)}>
+              <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+                <h3 className="brand-font" style={{ marginBottom: '1rem' }}>Đặt Lịch Hẹn Showroom</h3>
+                <p style={{ color: '#888', marginBottom: '2rem', fontSize: '0.9rem' }}>Trải nghiệm bộ sưu tập mùi hương cá nhân hóa cùng chuyên gia.</p>
+                <div className="form-group">
+                  <input type="text" placeholder="Họ và tên" style={{ background: '#000', border: '1px solid #333', color: '#fff', width: '100%', padding: '0.8rem', marginBottom: '1rem' }} />
+                  <input type="datetime-local" style={{ background: '#000', border: '1px solid #333', color: '#fff', width: '100%', padding: '0.8rem', marginBottom: '1rem' }} />
+                  <select style={{ background: '#000', border: '1px solid #333', color: '#fff', width: '100%', padding: '0.8rem' }}>
+                    <option>Chọn chi nhánh gần bạn</option>
+                    <option>KP Luxury Quận 1, TP.HCM</option>
+                    <option>KP Luxury Hoàn Kiếm, Hà Nội</option>
+                  </select>
+                </div>
+                <button className="btn-gold" style={{ width: '100%', marginTop: '2rem' }} onClick={() => { setShowBookingModal(false); showToast('Đặt lịch thành công!', 'success') }}>Xác Nhận Đặt Lịch</button>
+              </div>
             </div>
-            <button className="btn-gold" style={{ width: '100%', marginTop: '2rem' }} onClick={() => { setShowBookingModal(false); showToast('Đặt lịch thành công!', 'success') }}>Xác Nhận Đặt Lịch</button>
-          </div>
-        </div>
+          )}
+        </>
       )}
     </div>
   )

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600&display=swap');
+
 /* Main entry - imports all modular CSS */
 @import './styles/base.css';
 @import './styles/nav.css';
@@ -9,3 +11,26 @@
 @import './styles/checkout.css';
 @import './styles/toast.css';
 @import './styles/chatbot.css';
+
+:root {
+  --luxury-gold: #C5A059;
+  --luxury-gold-bright: #D4AF37;
+  --luxury-black: #0A0A0A;
+  --luxury-bg: #050505;
+  --glass-bg: rgba(10, 10, 10, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --font-serif: 'Playfair Display', serif;
+  --font-sans: 'Inter', sans-serif;
+  --accent-gold: var(--luxury-gold); /* Fallback for existing styles */
+}
+
+h1, h2, h3, .brand-font {
+  font-family: var(--font-serif);
+  letter-spacing: 0.05em;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--luxury-bg);
+  color: #fff;
+}

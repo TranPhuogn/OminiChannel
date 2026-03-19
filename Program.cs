@@ -54,12 +54,8 @@ app.UseStaticFiles();  // Serve files from wwwroot
 app.UseCors("AllowAll");
 app.UseAuthorization();
 
-app.MapAreaControllerRoute(
-    name: "AdminArea",
-    areaName: "Admin",
-    pattern: "Admin/{controller=Home}/{action=Index}/{id?}");
-    
 app.MapControllers();
+app.MapFallbackToFile("index.html"); // Handle SPA routing for React
 
 // Initialize Observers
 using (var scope = app.Services.CreateScope())
