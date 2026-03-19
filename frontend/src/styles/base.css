@@ -49,3 +49,22 @@ h1, h2, h3, .brand-font { font-family: 'Playfair Display', serif; letter-spacing
 
 @media (max-width: 1024px) { .container { padding: 0 2rem; } }
 @media (max-width: 768px) { .cart-sidebar { width: 100%; right: -100%; } }
+
+/* Skeleton Loader */
+@keyframes shimmer {
+  0% { background-position: -1000px 0; }
+  100% { background-position: 1000px 0; }
+}
+.skeleton-box {
+  background: #151515;
+  background-image: linear-gradient(to right, #151515 0%, #252525 20%, #151515 40%, #151515 100%);
+  background-repeat: no-repeat;
+  background-size: 1000px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 4px;
+}
+.skeleton-card { border: 1px solid var(--glass-border); padding: 1rem; background: var(--bg-card); display: flex; flex-direction: column; }
+.skeleton-img { width: 100%; aspect-ratio: 4/5; margin-bottom: 2rem; border-radius: 4px; }
+.skeleton-text { height: 1.5rem; margin-bottom: 1rem; width: 80%; align-self: center; }
+.skeleton-price { height: 1.2rem; width: 40%; margin-bottom: 1.5rem; align-self: center; }
+.skeleton-btn { height: 3rem; width: 100%; }

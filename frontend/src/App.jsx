@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import './index.css'
+import AdminDashboard from './AdminDashboard'
 
 function App() {
   // === CORE STATE ===
@@ -13,12 +14,25 @@ function App() {
   const [authModal, setAuthModal] = useState(null)
   const [authForm, setAuthForm] = useState({ username: '', password: '', email: '' })
 
-  // Cart
+  // Cart & Nav State
   const [cart, setCart] = useState(() => JSON.parse(localStorage.getItem('kp_cart')) || [])
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const [isGiftWrap, setIsGiftWrap] = useState(false)
+  const [giftMessage, setGiftMessage] = useState('')
+  const [isSearchOpen, setIsSearchOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   // Favorites
   const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem('kp_favs')) || [])
+
+  // Quiz State
+  const [quizStep, setQuizStep] = useState(0)
+  const [quizAnswers, setQuizAnswers] = useState({})
+  const [quizResults, setQuizResults] = useState([])
+
+  // O2O & Booking State
+  const [showStockModal, setShowStockModal] = useState(false)
+  const [showBookingModal, setShowBookingModal] = useState(false)
 
   // Orders
   const [orders, setOrders] = useState([])
@@ -28,6 +42,8 @@ function App() {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [detailQty, setDetailQty] = useState(1)
   const [selectedSize, setSelectedSize] = useState('50ml')
+  const [engravingText, setEngravingText] = useState('')
+  const [isEngravingActive, setIsEngravingActive] = useState(false)
   const [activeTab, setActiveTab] = useState('desc')
   const [comments, setComments] = useState([
     { id: 1, name: 'Ngọc Minh', stars: 5, text: 'Mùi hương sang trọng thực sự, lưu hương trên da hơn 6 tiếng. Đóng gói tinh tế. Giao hàng cực nhanh.', date: '02/03/2026', verified: true },
@@ -37,13 +53,16 @@ function App() {
   const [newComment, setNewComment] = useState({ name: '', text: '', stars: 5 })
   const [hoverStar, setHoverStar] = useState(0)
 
+  const [toasts, setToasts] = useState([])
+  const isAdmin = (user?.role || '').toString().trim().toLowerCase() === 'admin'
+
   // Search & Filter
   const [searchTerm, setSearchTerm] = useState('')
   const [sortBy, setSortBy] = useState('default')
-  const [filterGender, setFilterGender] = useState('all')
-
-  // Toast
-  const [toasts, setToasts] = useState([])
+  const [filterGender, setFilterGender] = useState('All')
+  const [filterFamily, setFilterFamily] = useState('All')
+  const [filterConcentration, setFilterConcentration] = useState('All')
+  const [priceRange, setPriceRange] = useState(10000000)
   const toastId = useRef(0)
 
   // Checkout
@@ -75,11 +94,25 @@ function App() {
   useEffect(() => {
     const savedUser = localStorage.getItem('user')
     if (savedUser) setUser(JSON.parse(savedUser))
+    
+    // Cross-device cart sync notification
+    const existingCart = JSON.parse(localStorage.getItem('kp_cart')) || []
+    if (existingCart.length > 0) {
+      setTimeout(() => showToast('🛒 Giỏ hàng của bạn đã được đồng bộ', 'info'), 1000)
+    }
+
     const handleScroll = () => setScrolled(window.scrollY > 50)
     window.addEventListener('scroll', handleScroll)
     refreshProducts()
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  // Ensure only admins can access the admin page
+  useEffect(() => {
+    if (page === 'admin' && !isAdmin) {
+      setPage('home')
+    }
+  }, [page, isAdmin])
 
   useEffect(() => {
     if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' })
@@ -158,10 +191,16 @@ function App() {
   const addToCart = (product, qty = 1) => {
     setCart(prev => {
       const existing = prev.find(i => i.id === product.id)
-      if (existing) return prev.map(i => i.id === product.id ? { ...i, quantity: i.quantity + qty } : i)
-      return [...prev, { id: product.id, name: product.name, price: product.price, imageUrl: product.imageUrl, quantity: qty }]
+      const newItem = { 
+        id: product.id, name: product.name, price: product.price, 
+        imageUrl: product.imageUrl, quantity: qty,
+        engraving: isEngravingActive ? engravingText : null
+      }
+      if (existing) return prev.map(i => i.id === product.id ? { ...i, quantity: i.quantity + qty, engraving: newItem.engraving } : i)
+      return [...prev, newItem]
     })
     showToast(`Đã thêm "${product.name}" vào giỏ hàng`)
+    setIsCartOpen(true); setEngravingText(''); setIsEngravingActive(false);
   }
 
   const updateCartQty = (id, change) => {
@@ -267,7 +306,10 @@ function App() {
   // === SEARCH & FILTER ===
   const filteredProducts = products
     .filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    .filter(p => filterGender === 'all' || p.gender === filterGender)
+    .filter(p => filterGender === 'All' || p.gender === filterGender)
+    .filter(p => filterFamily === 'All' || p.description.includes(filterFamily))
+    .filter(p => filterConcentration === 'All' || (p.concentration && p.concentration.includes(filterConcentration)))
+    .filter(p => p.price <= priceRange)
     .sort((a, b) => {
       if (sortBy === 'price-asc') return a.price - b.price
       if (sortBy === 'price-desc') return b.price - a.price
@@ -292,6 +334,39 @@ function App() {
     }, 800)
   }
 
+  // === FRAGRANCE QUIZ ===
+  const quizQuestions = [
+    { id: 'gender', q: 'Bạn tìm nước hoa cho ai?', options: [['Nam', '👨 Nam'], ['Nữ', '👩 Nữ'], ['Unisex', '✨ Cả hai']] },
+    { id: 'mood', q: 'Phong cách bạn hướng tới?', options: [['tươi mát', '🌊 Tươi mát'], ['sang trọng', '💎 Sang trọng'], ['quyến rũ', '🔥 Quyến rũ'], ['ấm áp', '🪵 Ấm áp']] },
+    { id: 'intensity', q: 'Độ nồng nàn mong muốn?', options: [['nhẹ nhàng', '🌸 Nhẹ nhàng'], ['vừa phải', '💫 Vừa phải'], ['nồng nàn', '🌟 Mãnh liệt']] }
+  ]
+
+  const handleQuizAnswer = (id, val) => {
+    const newAnsw = { ...quizAnswers, [id]: val }
+    setQuizAnswers(newAnsw)
+    if (quizStep < quizQuestions.length - 1) {
+      setQuizStep(prev => prev + 1)
+    } else {
+      // Calculate results
+      const matches = products.filter(p => {
+        let score = 0
+        if (p.gender === newAnsw.gender || newAnsw.gender === 'Unisex') score += 40
+        const descMatch = p.description?.toLowerCase() || ''
+        if (descMatch.includes(newAnsw.mood)) score += 30
+        if (p.concentration?.toLowerCase().includes('parfum') && newAnsw.intensity === 'nồng nàn') score += 30
+        if (p.concentration?.toLowerCase().includes('eau de toilette') && newAnsw.intensity === 'nhẹ nhàng') score += 30
+        p.matchScore = score
+        return score > 0
+      }).sort((a,b) => b.matchScore - a.matchScore).slice(0, 3)
+      setQuizResults(matches)
+      setQuizStep(100)
+    }
+  }
+
+  const resetQuiz = () => {
+    setQuizStep(0); setQuizAnswers({}); setQuizResults([]); setPage('quiz')
+  }
+
   // ===========================
   //          RENDER
   // ===========================
@@ -311,22 +386,51 @@ function App() {
       <nav className={scrolled ? 'scrolled' : ''}>
         <div className="container">
           <a href="#" className="logo" onClick={e => { e.preventDefault(); setPage('home') }}>KP LUXURY</a>
-          <div className="nav-links">
-            <a href="#" onClick={e => { e.preventDefault(); setPage('home') }}>Bộ Sưu Tập</a>
-            <a href="#" onClick={e => { e.preventDefault(); setPage('favorites') }}>
+          <button className="mobile-menu-toggle" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>☰</button>
+          
+          <div className={`nav-links ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+            
+            <div className="nav-search-container">
+              <input type="text" className="nav-search-input" placeholder="🔍 Tìm kiếm..." value={searchTerm} 
+                     onFocus={() => setIsSearchOpen(true)} 
+                     onChange={e => { setSearchTerm(e.target.value); if(page !== 'home') setPage('home') }} />
+              {searchTerm && isSearchOpen && (
+                <div className="search-suggest-dropdown" onMouseLeave={() => setIsSearchOpen(false)}>
+                  {filteredProducts.slice(0, 5).map(p => (
+                    <div key={p.id} className="suggest-item" onClick={() => { openDetail(p); setIsSearchOpen(false); setSearchTerm(''); setIsMobileMenuOpen(false); }}>
+                      <img src={p.imageUrl} alt={p.name} />
+                      <div className="suggest-info">
+                        <h4>{p.name}</h4>
+                        <p>{vnd(p.price)}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {filteredProducts.length === 0 && <div style={{ padding: '1rem', color: '#888' }}>Không tìm thấy sản phẩm.</div>}
+                </div>
+              )}
+            </div>
+
+            <a href="#" onClick={e => { e.preventDefault(); resetQuiz(); setIsMobileMenuOpen(false); }}>Fragrance Finder</a>
+            <a href="#" onClick={e => { e.preventDefault(); setPage('home'); setIsMobileMenuOpen(false); }}>Bộ Sưu Tập</a>
+            <a href="#" onClick={e => { e.preventDefault(); setPage('favorites'); setIsMobileMenuOpen(false); }}>
               ❤️ Yêu Thích ({favorites.length})
             </a>
+            {isAdmin && (
+              <a href="#" onClick={e => { e.preventDefault(); setPage('admin'); setIsMobileMenuOpen(false); }}>
+                🛠 Admin
+              </a>
+            )}
             {user ? (
               <>
-                <span style={{ color: 'var(--accent-gold)', marginLeft: '2.5rem', fontSize: '0.85rem', textTransform: 'uppercase' }}>
-                  Xin chào, {user.username}
+                <span style={{ color: 'var(--accent-gold)', marginLeft: '1.5rem', fontSize: '0.85rem', textTransform: 'uppercase' }}>
+                  Chào, {user.username}
                 </span>
-                <a href="#" onClick={e => { e.preventDefault(); logout() }}>Đăng Xuất</a>
+                <a href="#" onClick={e => { e.preventDefault(); logout(); setIsMobileMenuOpen(false); }}>Đăng Xuất</a>
               </>
             ) : (
-              <a href="#" onClick={e => { e.preventDefault(); setAuthModal('login') }}>Đăng Nhập</a>
+              <a href="#" onClick={e => { e.preventDefault(); setAuthModal('login'); setIsMobileMenuOpen(false); }}>Đăng Nhập</a>
             )}
-            <a href="#" onClick={e => { e.preventDefault(); setPage('cart') }}>
+            <a href="#" onClick={e => { e.preventDefault(); setIsCartOpen(true); setIsMobileMenuOpen(false); }}>
               🛒 Giỏ Hàng ({cart.reduce((a, b) => a + b.quantity, 0)})
             </a>
           </div>
@@ -391,7 +495,6 @@ function App() {
 
               {/* Search & Filter */}
               <div className="search-filter-bar">
-                <input className="search-input" type="text" placeholder="🔍 Tìm kiếm nước hoa..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
                 <select className="filter-select" value={sortBy} onChange={e => setSortBy(e.target.value)}>
                   <option value="default">Sắp xếp mặc định</option>
                   <option value="price-asc">Giá: Thấp → Cao</option>
@@ -407,7 +510,16 @@ function App() {
               </div>
 
               {loading ? (
-                <div className="loading-state"><p>Đang tải bộ sưu tập...</p></div>
+                <div className="product-grid">
+                  {[1, 2, 3, 4, 5, 6].map(i => (
+                    <div key={i} className="skeleton-card">
+                      <div className="skeleton-box skeleton-img"></div>
+                      <div className="skeleton-box skeleton-text"></div>
+                      <div className="skeleton-box skeleton-price"></div>
+                      <div className="skeleton-box skeleton-btn"></div>
+                    </div>
+                  ))}
+                </div>
               ) : filteredProducts.length === 0 ? (
                 <p style={{ textAlign: 'center', color: '#888' }}>Không tìm thấy sản phẩm phù hợp.</p>
               ) : (
@@ -415,7 +527,8 @@ function App() {
                   {filteredProducts.map(product => (
                     <div key={product.id} className="product-card">
                       <div className="product-image-container" onClick={() => openDetail(product)}>
-                        <img src={product.imageUrl} alt={product.name} className="product-image" />
+                        <img src={product.imageUrl} alt={product.name} className="product-image" loading="lazy" />
+                        <img src="https://images.unsplash.com/photo-1594035910387-fea47794261f?auto=format&fit=crop&q=80&w=400" alt="lifestyle" className="product-image-hover" loading="lazy" />
                         <div className="card-actions">
                           <button className={`icon-btn ${favorites.includes(product.id) ? 'active' : ''}`}
                             onClick={e => { e.stopPropagation(); toggleFavorite(product.id) }}>♥</button>
@@ -530,10 +643,15 @@ function App() {
               </div>
 
               <div className="detail-layout">
-                {/* Gallery */}
+                {/* Gallery with Engraving Preview */}
                 <div className="detail-gallery">
-                  <img src={selectedProduct.imageUrl} alt={selectedProduct.name} className="detail-main-img"
-                    onError={e => { e.target.src = 'https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=800' }} />
+                  <div className="bottle-preview-container">
+                    <img src={selectedProduct.imageUrl} alt={selectedProduct.name} className="detail-main-img"
+                      onError={e => { e.target.src = 'https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=800' }} />
+                    {isEngravingActive && engravingText && (
+                      <div className="engraving-overlay">{engravingText}</div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Info */}
@@ -583,24 +701,36 @@ function App() {
 
                   {/* Fragrance Notes */}
                   <div className="fragrance-notes">
-                    <h4>🌸 Tầng Hương</h4>
+                    <h4>🌸 Tầng Hương Trực Quan</h4>
                     <div className="notes-pyramid">
-                      <div className="note-layer">
-                        <div className="note-icon">💨</div>
-                        <div className="note-label">Hương đầu</div>
-                        <div className="note-name">{selectedProduct.topNotes || 'Cam Bergamot · Chanh'}</div>
-                      </div>
-                      <div className="note-layer">
-                        <div className="note-icon">🌹</div>
-                        <div className="note-label">Hương giữa</div>
-                        <div className="note-name">{selectedProduct.middleNotes || 'Hồng · Nhài'}</div>
-                      </div>
-                      <div className="note-layer">
-                        <div className="note-icon">🪵</div>
-                        <div className="note-label">Hương cuối</div>
-                        <div className="note-name">{selectedProduct.baseNotes || 'Trầm · Xạ Hương'}</div>
-                      </div>
+                      {[
+                        { l: 'Hương đầu', n: selectedProduct.topNotes, i: '💨', t: 'Hương thơm lan tỏa ngay lập tức, lưu lại từ 15-30 phút đầu.' },
+                        { l: 'Hương giữa', n: selectedProduct.middleNotes, i: '🌹', t: 'Linh hồn của nước hoa, thể hiện rõ nhất sau khi hương đầu nhạt đi.' },
+                        { l: 'Hương cuối', n: selectedProduct.baseNotes, i: '🪵', t: 'Điểm tựa trầm ấm, lưu lại lâu nhất trên da suốt nhiều giờ.' }
+                      ].map((layer, idx) => (
+                        <div key={idx} className="note-layer" title={layer.t}>
+                          <div className="note-icon">{layer.i}</div>
+                          <div className="note-label">{layer.l}</div>
+                          <div className="note-name">{layer.n || 'Đang cập nhật...'}</div>
+                          <div className="note-tooltip">{layer.t}</div>
+                        </div>
+                      ))}
                     </div>
+                  </div>
+
+                  {/* Engraving Service */}
+                  <div className="engraving-service">
+                    <label className="checkbox-label">
+                      <input type="checkbox" checked={isEngravingActive} onChange={e => setIsEngravingActive(e.target.checked)} />
+                      <span>🖋️ Dịch vụ khắc tên lên sản phẩm (Miễn phí)</span>
+                    </label>
+                    {isEngravingActive && (
+                      <div className="engraving-input-wrap fade-in">
+                        <input type="text" maxLength="15" placeholder="Nhập tên bạn muốn khắc..."
+                          value={engravingText} onChange={e => setEngravingText(e.target.value)} />
+                        <p style={{ fontSize: '0.7rem', color: '#888', marginTop: '0.5rem' }}>Tối đa 15 ký tự. Ví dụ: "Kim Hoang", "Love"...</p>
+                      </div>
+                    )}
                   </div>
 
                   {/* Info Tabs */}
@@ -659,9 +789,24 @@ function App() {
                     <button className="btn-buy-now" onClick={() => { addToCart(selectedProduct, detailQty); setPage('checkout') }} disabled={stockStatus === 'out'}>
                       ⚡ Mua Ngay
                     </button>
-                    <button className="btn-store-pickup" onClick={() => showToast('🏪 Đặt lịch nhận tại cửa hàng — tính năng sắp ra mắt!', 'info')}>
-                      🏪 Mua Tại Shop
+                    <button className="btn-store-pickup" onClick={() => { setCheckoutForm(prev => ({ ...prev, isPickup: true })); addToCart(selectedProduct, detailQty); setPage('checkout') }} disabled={stockStatus === 'out'}>
+                      🏪 Nhận Tại Cửa Hàng
                     </button>
+                    <button className="btn-secondary" style={{ width: '100%', marginTop: '0.5rem', background: 'transparent', border: '1px solid #333' }}
+                      onClick={() => setShowStockModal(true)}>
+                      📍 Kiểm tra tồn kho tại cửa hàng
+                    </button>
+                    <button className="btn-secondary" style={{ width: '100%', marginTop: '0.5rem', background: 'transparent', border: '1px solid #333' }}
+                      onClick={() => setShowBookingModal(true)}>
+                      📅 Đặt lịch thử mùi tại Showroom
+                    </button>
+                  </div>
+
+                  {/* Discovery Sets Cross-sell */}
+                  <div className="discovery-cross-sell" style={{ marginTop: '2.5rem', padding: '1.5rem', border: '1px dashed var(--accent-gold)', borderRadius: '8px', background: 'rgba(197,160,89,0.05)' }}>
+                    <h4 style={{ color: 'var(--accent-gold)', marginBottom: '0.5rem' }}>🎁 Trải nghiệm trước khi mua Full-size?</h4>
+                    <p style={{ fontSize: '0.85rem', color: '#888', marginBottom: '1rem' }}>Sở hữu bộ Discovery Set (3 ống 2ml) chỉ với 250.000đ. Nhận Voucher hoàn tiền 250k cho đơn hàng Full-size sau này.</p>
+                    <button className="btn-gold" style={{ width: '100%', padding: '0.8rem', fontSize: '0.8rem' }} onClick={() => showToast('Đã thêm Bộ mẫu thử vào giỏ hàng!')}>Mua Bộ Mẫu Thử</button>
                   </div>
 
                   {/* Channel Listing */}
@@ -754,11 +899,17 @@ function App() {
                 {/* Comment List */}
                 {comments.map(c => (
                   <div key={c.id} className="review-item">
-                    <div className="review-header">
-                      <span className="reviewer-name">{c.name}{c.verified && <span className="review-verified">✅ Đã mua hàng</span>}</span>
-                      <span className="review-date">{c.date}</span>
-                    </div>
                     <div className="review-stars">{'★'.repeat(c.stars)}{'☆'.repeat(5 - c.stars)}</div>
+                    <div className="review-meta">
+                      <span>{c.name}</span> · <span>{c.date}</span>
+                      {c.verified && <span className="verified-badge">✓ Đã mua hàng</span>}
+                    </div>
+                    {(c.longevity !== undefined || c.sillage !== undefined) && (
+                      <div className="review-performance" style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--accent-gold)' }}>
+                         <span>⏱️ Lưu hương: {['Tệ', 'Kém', 'Trung bình', 'Lâu', 'Rất lâu'][c.longevity || 2]}</span>
+                         <span>🌬️ Tỏa hương: {['Sát da', 'Gần', 'Trung bình', 'Xa', 'Cực xa'][c.sillage || 2]}</span>
+                      </div>
+                    )}
                     <p className="review-text">{c.text}</p>
                   </div>
                 ))}
@@ -786,6 +937,15 @@ function App() {
                 </div>
               )}
 
+            </div>
+            
+            {/* Sticky Mobile Add To Cart */}
+            <div className={`sticky-cart-mobile ${scrolled ? 'visible' : ''}`}>
+              <div>
+                <div style={{ fontSize: '0.75rem', color: '#888', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '120px' }}>{selectedProduct.name}</div>
+                <div className="price">{vnd(currentPrice)}</div>
+              </div>
+              <button onClick={() => addToCart(selectedProduct, detailQty)} disabled={stockStatus === 'out'}>🛒 Thêm Vào Giỏ</button>
             </div>
           </div>
         )
@@ -829,6 +989,57 @@ function App() {
                 ))}
               </div>
             )}
+          </div>
+        </section>
+      )}
+
+      {/* ============================================================ */}
+      {/*                    PAGE: FRAGRANCE QUIZ                      */}
+      {/* ============================================================ */}
+      {page === 'quiz' && (
+        <section className="quiz-page" style={{ paddingTop: '8rem', minHeight: '100vh', background: 'var(--bg-dark)' }}>
+          <div className="container" style={{ maxWidth: '800px' }}>
+            <h2 className="section-title">
+              <span>Trợ Lý Cá Nhân</span>
+              Fragrance Finder
+            </h2>
+            
+            <div className="quiz-card" style={{ background: '#111', border: '1px solid var(--glass-border)', padding: '3rem', borderRadius: '12px', textAlign: 'center' }}>
+              {quizStep < quizQuestions.length ? (
+                <div key={quizStep} className="fade-in">
+                  <p style={{ color: 'var(--accent-gold)', marginBottom: '1rem', letterSpacing: '2px' }}>CÂU HỎI {quizStep + 1}/{quizQuestions.length}</p>
+                  <h3 className="brand-font" style={{ fontSize: '2rem', marginBottom: '2.5rem' }}>{quizQuestions[quizStep].q}</h3>
+                  <div style={{ display: 'grid', gap: '1rem', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))' }}>
+                    {quizQuestions[quizStep].options.map(([val, label]) => (
+                      <button key={val} className="btn-gold" style={{ background: 'transparent', border: '1px solid #333', color: '#fff' }}
+                        onMouseOver={e => e.currentTarget.style.borderColor = 'var(--accent-gold)'}
+                        onMouseOut={e => e.currentTarget.style.borderColor = '#333'}
+                        onClick={() => handleQuizAnswer(quizQuestions[quizStep].id, val)}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="fade-in">
+                  <h3 className="brand-font" style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>Sản Phẩm Dành Cho Bạn</h3>
+                  <p style={{ color: '#888', marginBottom: '3rem' }}>Dựa trên sở thích cá nhân, đây là những mùi hương chúng tôi gợi ý:</p>
+                  <div className="product-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '2rem' }}>
+                    {quizResults.map(p => (
+                      <div key={p.id} className="product-card" style={{ padding: '0.5rem' }}>
+                        <div className="product-image-container" onClick={() => openDetail(p)} style={{ aspectRatio: '1/1', marginBottom: '1rem' }}>
+                          <img src={p.imageUrl} alt={p.name} className="product-image" />
+                        </div>
+                        <h4 className="brand-font">{p.name}</h4>
+                        <p style={{ color: 'var(--accent-gold)', fontSize: '0.9rem' }}>{p.matchScore}% Phù Hợp</p>
+                        <button className="btn-gold" style={{ width: '100%', padding: '0.6rem', marginTop: '1rem', fontSize: '0.75rem' }} onClick={() => openDetail(p)}>Chi Tiết</button>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="btn-gold" style={{ marginTop: '4rem' }} onClick={() => resetQuiz()}>Làm Lại Trắc Nghiệm</button>
+                </div>
+              )}
+            </div>
           </div>
         </section>
       )}
@@ -914,11 +1125,22 @@ function App() {
                       value={checkoutForm.isPickup ? '' : checkoutForm.address} 
                       onChange={e => setCheckoutForm({ ...checkoutForm, address: e.target.value })} />
                   </div>
-                  <div className="form-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                    <input type="checkbox" id="pickup" checked={checkoutForm.isPickup} 
-                      onChange={e => setCheckoutForm({ ...checkoutForm, isPickup: e.target.checked })} />
-                    <label htmlFor="pickup" style={{ marginBottom: 0 }}>Tôi muốn nhận hàng tại cửa hàng (In-store Pickup)</label>
-                  </div>
+                  <label className="checkbox-label" style={{ marginBottom: '1.5rem' }}>
+                    <input type="checkbox" checked={checkoutForm.isPickup} 
+                      onChange={e => setCheckoutForm(p => ({ ...p, isPickup: e.target.checked }))} />
+                    <span>🏪 Nhận tại cửa hàng (Miễn phí vận chuyển)</span>
+                  </label>
+
+                  {checkoutForm.isPickup && (
+                    <div className="form-group fade-in" style={{ marginBottom: '1.5rem', padding: '1rem', border: '1px solid var(--accent-gold)', borderRadius: '4px' }}>
+                      <label style={{ fontSize: '0.8rem', color: 'var(--accent-gold)', display: 'block', marginBottom: '0.5rem' }}>CHỌN CHI NHÁNH NHẬN HÀNG</label>
+                      <select className="form-input" style={{ width: '100%' }}>
+                        <option>KP Luxury Quận 1 - 123 Lê Lợi, HCM</option>
+                        <option>KP Luxury Hoàn Kiếm - 45 Hàng Bài, HN</option>
+                        <option>KP Luxury Đà Nẵng - 89 Bạch Đằng, ĐN</option>
+                      </select>
+                    </div>
+                  )}
                   <div className="form-group">
                     <label>Số điện thoại</label>
                     <input type="text" required value={checkoutForm.phone} onChange={e => setCheckoutForm({ ...checkoutForm, phone: e.target.value })} />
@@ -963,6 +1185,7 @@ function App() {
               <div style={{ flex: 1 }}>
                 <h4 className="brand-font" style={{ fontSize: '0.95rem' }}>{item.name}</h4>
                 <p style={{ color: 'var(--accent-gold)', fontSize: '0.85rem' }}>{vnd(item.price)} · SL: {item.quantity}</p>
+                {item.engraving && <p style={{ fontSize: '0.7rem', color: '#666', fontStyle: 'italic' }}>🖊️ Khắc: "{item.engraving}"</p>}
               </div>
               <button onClick={() => removeFromCart(item.id)} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', alignSelf: 'center', fontSize: '0.8rem' }}>Xóa</button>
             </div>
@@ -970,9 +1193,23 @@ function App() {
         </div>
         {cart.length > 0 && (
           <div style={{ borderTop: '1px solid #222', paddingTop: '1.5rem' }}>
+            {/* Gift Options in Sidebar */}
+            <div className="cart-gift-options" style={{ marginBottom: '1.5rem', padding: '1rem', background: 'rgba(255,255,255,0.02)', borderRadius: '8px' }}>
+              <label className="checkbox-label" style={{ fontSize: '0.85rem' }}>
+                <input type="checkbox" checked={isGiftWrap} onChange={e => setIsGiftWrap(e.target.checked)} />
+                <span>🎁 Gói quà cao cấp (+50k)</span>
+              </label>
+              {isGiftWrap && (
+                <div className="fade-in" style={{ marginTop: '0.75rem' }}>
+                  <textarea placeholder="Nhập lời chúc của bạn..." style={{ width: '100%', background: '#000', border: '1px solid #333', color: '#fff', padding: '0.5rem', fontSize: '0.8rem', borderRadius: '4px' }}
+                    value={giftMessage} onChange={e => setGiftMessage(e.target.value)} />
+                </div>
+              )}
+            </div>
+
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-              <span className="brand-font">Tổng Cộng</span>
-              <span style={{ color: 'var(--accent-gold)', fontSize: '1.1rem', fontWeight: 600 }}>{vnd(cartTotal)}</span>
+              <span className="brand-font">Tổng Đơn</span>
+              <span style={{ color: 'var(--accent-gold)', fontSize: '1.1rem', fontWeight: 600 }}>{vnd(cartTotal + (isGiftWrap ? 2000 : 0))}</span>
             </div>
             <button className="btn-gold" style={{ width: '100%' }} onClick={() => { setIsCartOpen(false); setPage('cart') }}>Xem Giỏ Hàng</button>
           </div>
@@ -987,7 +1224,17 @@ function App() {
         </div>
       </footer>
 
-      {/* === CHATBOT === */}
+      {/* ============================================================ */}
+      {/*                    PAGE: ADMIN DASHBOARD                      */}
+      {/* ============================================================ */}
+      {page === 'admin' && isAdmin && (
+        <AdminDashboard 
+          products={products} 
+          orders={orders} 
+          cartTotal={cartTotal}
+          setPage={setPage} 
+        />
+      )}
       <button className="chatbot-toggle" onClick={() => setChatOpen(!chatOpen)}>
         {chatOpen ? '✕' : '💬'}
       </button>
@@ -1008,6 +1255,49 @@ function App() {
               onChange={e => setChatInput(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && handleSendChat()} />
             <button onClick={handleSendChat}>📤</button>
+          </div>
+        </div>
+      )}
+      {/* Modals for O2O */}
+      {showStockModal && (
+        <div className="modal-overlay" onClick={() => setShowStockModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <h3 className="brand-font" style={{ marginBottom: '1.5rem' }}>Tồn Kho Tại Cửa Hàng</h3>
+            <div className="store-list" style={{ display: 'grid', gap: '1rem' }}>
+              {[
+                { name: 'KP Luxury Quận 1', addr: '123 Lê Lợi, TP.HCM', stock: 'Có hàng' },
+                { name: 'KP Luxury Hoàn Kiếm', addr: '45 Hàng Bài, Hà Nội', stock: 'Có hàng' },
+                { name: 'KP Luxury Đà Nẵng', addr: '89 Bạch Đằng, Đà Nẵng', stock: 'Hết hàng' }
+              ].map(s => (
+                <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', padding: '1rem', background: '#111', borderRadius: '4px' }}>
+                  <div>
+                    <div style={{ fontWeight: 600 }}>{s.name}</div>
+                    <div style={{ fontSize: '0.8rem', color: '#666' }}>{s.addr}</div>
+                  </div>
+                  <div style={{ color: s.stock === 'Có hàng' ? '#27ae60' : '#e74c3c', fontSize: '0.85rem' }}>{s.stock}</div>
+                </div>
+              ))}
+            </div>
+            <button className="btn-gold" style={{ width: '100%', marginTop: '2rem' }} onClick={() => setShowStockModal(false)}>Đóng</button>
+          </div>
+        </div>
+      )}
+
+      {showBookingModal && (
+        <div className="modal-overlay" onClick={() => setShowBookingModal(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <h3 className="brand-font" style={{ marginBottom: '1rem' }}>Đặt Lịch Hẹn Showroom</h3>
+            <p style={{ color: '#888', marginBottom: '2rem', fontSize: '0.9rem' }}>Trải nghiệm bộ sưu tập mùi hương cá nhân hóa cùng chuyên gia.</p>
+            <div className="form-group">
+              <input type="text" placeholder="Họ và tên" style={{ background: '#000', border: '1px solid #333', color: '#fff', width: '100%', padding: '0.8rem', marginBottom: '1rem' }} />
+              <input type="datetime-local" style={{ background: '#000', border: '1px solid #333', color: '#fff', width: '100%', padding: '0.8rem', marginBottom: '1rem' }} />
+              <select style={{ background: '#000', border: '1px solid #333', color: '#fff', width: '100%', padding: '0.8rem' }}>
+                <option>Chọn chi nhánh gần bạn</option>
+                <option>KP Luxury Quận 1, TP.HCM</option>
+                <option>KP Luxury Hoàn Kiếm, Hà Nội</option>
+              </select>
+            </div>
+            <button className="btn-gold" style={{ width: '100%', marginTop: '2rem' }} onClick={() => { setShowBookingModal(false); showToast('Đặt lịch thành công!', 'success') }}>Xác Nhận Đặt Lịch</button>
           </div>
         </div>
       )}

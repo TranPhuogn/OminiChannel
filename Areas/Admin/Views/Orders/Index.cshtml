@@ -2,7 +2,176 @@
     ViewData["Title"] = "Đơn hàng | Admin Dashboard";
 }
 
-<div class="card">
-    <h2 class="brand-font" style="color: var(--accent-gold); margin-bottom: 2rem;">Quản Lý Đơn Hàng</h2>
-    <p style="color: #888;">Tính năng đang được phát triển...</p>
+<div class="card" style="background:#111;border:1px solid var(--glass-border);padding:2rem;border-radius:12px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.5rem;">
+        <div>
+            <h2 class="brand-font" style="color: var(--accent-gold); margin-bottom: 0.5rem;">Quản Lý Đơn Hàng Omni-channel</h2>
+            <p style="color:#888;font-size:0.9rem;">Theo dõi luồng đơn từ Website & các kênh Marketplace (Shopee, Lazada, TikTok Shop...).</p>
+        </div>
+        <div style="display:flex;gap:0.75rem;align-items:center;">
+            <select id="statusFilter" class="admin-input-sm">
+                <option value="">Tất cả trạng thái</option>
+                <option value="Pending">Chờ xử lý</option>
+                <option value="Processing">Đang xử lý</option>
+                <option value="Completed">Hoàn tất</option>
+                <option value="Cancelled">Đã hủy</option>
+            </select>
+            <select id="channelFilter" class="admin-input-sm">
+                <option value="">Tất cả kênh</option>
+                <option value="Website">Website</option>
+                <option value="Shopee">Shopee</option>
+                <option value="Lazada">Lazada</option>
+                <option value="TikTok">TikTok Shop</option>
+            </select>
+        </div>
+    </div>
+
+    <table class="admin-table" id="ordersTable">
+        <thead>
+            <tr>
+                <th>Mã Đơn</th>
+                <th>Ngày</th>
+                <th>Kênh</th>
+                <th>Khách Hàng</th>
+                <th>Sản Phẩm</th>
+                <th>Giá trị</th>
+                <th>Trạng Thái</th>
+            </tr>
+        </thead>
+        <tbody id="ordersBody">
+            <!-- load bằng JS -->
+        </tbody>
+    </table>
 </div>
+
+<div class="card" style="margin-top:2rem;background:#111;border:1px solid var(--glass-border);padding:2rem;border-radius:12px;">
+    <h3 class="brand-font" style="color:var(--accent-gold);margin-bottom:1rem;">Tóm tắt nhanh hôm nay</h3>
+    <div style="display:flex;gap:2rem;flex-wrap:wrap;font-size:0.9rem;color:#ccc;" id="ordersSummary">
+        <!-- tổng quan đơn hàng sẽ được cập nhật bằng JS -->
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const vnd = (price) =>
+            new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' })
+                .format(price || 0);
+
+        function mapChannel(order) {
+            // đơn website không có channelName => Website
+            return order.channelName || order.ChannelName || 'Website';
+        }
+
+        function mapStatus(order) {
+            return order.status || order.Status || 'Pending';
+        }
+
+        function formatDate(val) {
+            if (!val) return '';
+            const d = new Date(val);
+            if (isNaN(d)) return val;
+            return d.toLocaleString('vi-VN');
+        }
+
+        function buildSummary(orders) {
+            const box = document.getElementById('ordersSummary');
+            if (!orders || !orders.length) {
+                box.innerHTML = '<span style="color:#666;">Chưa có đơn hàng nào.</span>';
+                return;
+            }
+
+            const total = orders.reduce((s, o) => {
+                const amount = o.totalAmount ?? o.TotalAmount ??
+                    ((o.items || o.Items || []).reduce((t, it) =>
+                        t + (it.price || it.Price || 0) * (it.quantity || it.Quantity || 1), 0));
+                return s + (amount || 0);
+            }, 0);
+
+            const byChannel = {};
+            orders.forEach(o => {
+                const c = mapChannel(o);
+                byChannel[c] = (byChannel[c] || 0) + 1;
+            });
+
+            box.innerHTML = `
+                <div>📦 Tổng đơn: <strong>${orders.length}</strong></div>
+                <div>💰 Doanh thu gộp: <strong style="color:var(--accent-gold);">${vnd(total)}</strong></div>
+                <div>Kênh: ${
+                    Object.entries(byChannel)
+                        .map(([k,v]) => `<span style="margin-right:1rem;">${k}: <strong>${v}</strong></span>`)
+                        .join('')
+                }</div>
+            `;
+        }
+
+        async function loadOrders() {
+            if (!window.user) return;
+
+            const statusFilter = document.getElementById('statusFilter').value;
+            const channelFilter = document.getElementById('channelFilter').value;
+
+            const res = await fetch('/api/orders', {
+                headers: { 'X-User-Role': window.user.role }
+            });
+
+            if (!res.ok) {
+                console.error('Không tải được orders');
+                return;
+            }
+
+            let data = await res.json();
+            if (!Array.isArray(data)) data = [];
+
+            // filter theo UI
+            data = data.filter(o => {
+                const st = mapStatus(o);
+                const ch = mapChannel(o);
+                if (statusFilter && !st.toLowerCase().includes(statusFilter.toLowerCase())) return false;
+                if (channelFilter && ch !== channelFilter) return false;
+                return true;
+            });
+
+            const tbody = document.getElementById('ordersBody');
+            tbody.innerHTML = '';
+
+            data.forEach(o => {
+                const id = o.id ?? o.Id;
+                const date = o.orderDate ?? o.OrderDate;
+                const customer = o.customerName ?? o.CustomerName ?? o.userName ?? o.UserName ?? 'Khách hàng';
+                const items = o.items || o.Items || [];
+                const first = items[0];
+                const itemLabel = items.length
+                    ? `${first?.perfumeName || first?.PerfumeName || 'Sản phẩm'}${items.length > 1 ? ' +' + (items.length - 1) : ''}`
+                    : '—';
+                const status = mapStatus(o);
+                const channel = mapChannel(o);
+                const amount = o.totalAmount ?? o.TotalAmount ??
+                    (items.reduce((t, it) =>
+                        t + (it.price || it.Price || 0) * (it.quantity || it.Quantity || 1), 0));
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>#${id}</td>
+                    <td>${formatDate(date)}</td>
+                    <td>${channel}</td>
+                    <td>${customer}</td>
+                    <td style="font-size:0.85rem;">${itemLabel}</td>
+                    <td>${vnd(amount)}</td>
+                    <td>
+                        <span class="${status.toLowerCase().includes('pending') ? 'status-pending' : 'status-processing'}">
+                            ${status}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            buildSummary(data);
+        }
+
+        document.getElementById('statusFilter').addEventListener('change', loadOrders);
+        document.getElementById('channelFilter').addEventListener('change', loadOrders);
+
+        loadOrders();
+    </script>
+}
