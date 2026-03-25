@@ -95,6 +95,71 @@
   border-left: 2px solid var(--admin-gold) !important;
 }
 
+/* Luxury Utility Classes */
+.brand-font { font-family: 'Playfair Display', serif !important; }
+
+.glass-panel {
+  background: rgba(15, 15, 15, 0.7) !important;
+  backdrop-filter: blur(25px) !important;
+  border: 1px solid rgba(197, 160, 89, 0.2) !important;
+  padding: 2rem !important;
+  transition: all 0.4s ease !important;
+}
+
+.glass-panel:hover {
+  border-color: rgba(197, 160, 89, 0.4) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+.shadow-gold {
+  box-shadow: 0 0 20px rgba(197, 160, 89, 0.05) !important;
+}
+
+.luxury-badge {
+  padding: 4px 12px !important;
+  font-size: 0.65rem !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1.5px !important;
+  border-radius: 2px !important;
+  border: 1px solid currentColor !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.luxury-button-gold {
+  background: var(--admin-gold) !important;
+  color: #000 !important;
+  border: none !important;
+  padding: 0.8rem 1.8rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 2px !important;
+  cursor: pointer !important;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.luxury-button-gold:hover {
+  background: #e0bc7b !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 5px 15px rgba(197, 160, 89, 0.3) !important;
+}
+
+.luxury-input-field {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #fff !important;
+  padding: 0.8rem 1rem !important;
+  font-size: 0.85rem !important;
+  outline: none !important;
+  transition: all 0.3s ease !important;
+}
+
+.luxury-input-field:focus {
+  border-color: var(--admin-gold) !important;
+  background: rgba(197, 160, 89, 0.05) !important;
+}
+
 /* Glass Panels */
 .admin-panel {
   background: var(--admin-panel-bg) !important;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 
 const ProductsTab = ({ products, user, onRefresh }) => {
   const [showModal, setShowModal] = useState(false);

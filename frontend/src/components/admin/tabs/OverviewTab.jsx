@@ -1,14 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { vnd } from '../../../utils/format';
 
-const OverviewTab = ({ products, orders, cartTotal, user }) => {
+const OverviewTab = ({ products, orders, user }) => {
   const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboard = async () => {
       try {
-        setLoading(true);
         const res = await fetch('/api/statistics/dashboard', {
           headers: { 'X-User-Role': user?.role || 'Admin' }
         });
@@ -16,7 +14,6 @@ const OverviewTab = ({ products, orders, cartTotal, user }) => {
           setDashboardData(await res.json());
         }
       } catch (err) { console.error('Dashboard fetch error:', err); }
-      finally { setLoading(false); }
     };
     fetchDashboard();
   }, [user, orders]);

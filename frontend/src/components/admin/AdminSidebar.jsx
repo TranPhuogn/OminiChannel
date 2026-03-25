@@ -1,12 +1,9 @@
-import React from 'react';
-
 const AdminSidebar = ({ activeTab, setActiveTab, setPage, isMobileOpen, setIsMobileOpen }) => {
   const menuItems = [
     { id: 'overview', label: 'Tổng Quan', icon: '📊' },
     { id: 'products', label: 'Sản Phẩm', icon: '💎' },
     { id: 'orders', label: 'Đơn Hàng', icon: '📜' },
     { id: 'crm', label: 'Khách Hàng', icon: '👤' },
-    { id: 'inventory', label: 'Kho Hàng', icon: '📦' },
     { id: 'inventory', label: 'Kho Hàng', icon: '📦' },
   ];
 

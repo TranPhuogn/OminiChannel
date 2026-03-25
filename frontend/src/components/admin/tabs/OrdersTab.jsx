@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { vnd } from '../../../utils/format';
 
 const OrdersTab = ({ orders, user, onRefresh }) => {

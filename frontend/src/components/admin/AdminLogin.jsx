@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import '../../styles/AdminLogin.css';
 
 const AdminLogin = ({ onLogin, setPage, showToast }) => {
@@ -26,7 +26,7 @@ const AdminLogin = ({ onLogin, setPage, showToast }) => {
             } else {
                 showToast(data.message || 'Đăng nhập thất bại', 'error');
             }
-        } catch (err) {
+        } catch {
             showToast('Lỗi kết nối máy chủ', 'error');
         } finally {
             setLoading(false);

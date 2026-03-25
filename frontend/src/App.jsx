@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './index.css'
 import AdminDashboard from './AdminDashboard'
 import AdminLogin from './components/admin/AdminLogin'
@@ -109,7 +109,7 @@ function App() {
 
     refreshProducts()
     return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Ensure only admins can access the admin page
   // Removed automatic redirect to home for admin page to allow AdminLogin to show
@@ -189,7 +189,7 @@ function App() {
         setUser(data); localStorage.setItem('user', JSON.stringify(data))
         setAuthModal(null); showToast(`Xin chào ${data.username}!`)
       } else showToast(data.message || 'Đăng nhập thất bại', 'error')
-    } catch (err) { showToast('Lỗi kết nối', 'error') }
+    } catch { showToast('Lỗi kết nối', 'error') }
   }
 
   const handleRegister = async (e) => {
@@ -201,7 +201,7 @@ function App() {
       })
       if (res.ok) { showToast('Đăng ký thành công! Hãy đăng nhập.'); setAuthModal('login') }
       else { const data = await res.json(); showToast(data.message || 'Đăng ký thất bại', 'error') }
-    } catch (err) { showToast('Lỗi kết nối', 'error') }
+    } catch { showToast('Lỗi kết nối', 'error') }
   }
 
   const logout = () => {
@@ -305,7 +305,7 @@ function App() {
       } else {
         showToast('Lỗi gửi đánh giá', 'error')
       }
-    } catch (err) { showToast('Lỗi kết nối', 'error') }
+    } catch { showToast('Lỗi kết nối', 'error') }
   }
 
   // === CHECKOUT ===
@@ -337,7 +337,7 @@ function App() {
       } else {
         showToast(data.message || 'Lỗi đặt hàng', 'error')
       }
-    } catch (err) { showToast('Lỗi kết nối khi đặt hàng', 'error') }
+    } catch { showToast('Lỗi kết nối khi đặt hàng', 'error') }
   }
 
   // === SEARCH & FILTER ===
@@ -537,10 +537,29 @@ function App() {
                   <option value="name">Tên: A → Z</option>
                 </select>
                 <select className="filter-select" value={filterGender} onChange={e => setFilterGender(e.target.value)}>
-                  <option value="all">Tất cả giới tính</option>
+                  <option value="All">Tất cả giới tính</option>
                   <option value="Nam">Nam</option>
                   <option value="Nữ">Nữ</option>
                   <option value="Unisex">Unisex</option>
+                </select>
+                <select className="filter-select" value={filterFamily} onChange={e => setFilterFamily(e.target.value)}>
+                  <option value="All">Tất cả nhóm hương</option>
+                  <option value="tươi mát">Tươi mát</option>
+                  <option value="hoa">Hương hoa</option>
+                  <option value="gỗ">Hương gỗ</option>
+                  <option value="ngọt">Hương ngọt</option>
+                </select>
+                <select className="filter-select" value={filterConcentration} onChange={e => setFilterConcentration(e.target.value)}>
+                  <option value="All">Tất cả nồng độ</option>
+                  <option value="parfum">Parfum</option>
+                  <option value="eau de parfum">Eau de Parfum</option>
+                  <option value="eau de toilette">Eau de Toilette</option>
+                </select>
+                <select className="filter-select" value={priceRange} onChange={e => setPriceRange(Number(e.target.value))}>
+                  <option value={2000000}>Dưới 2 triệu</option>
+                  <option value={5000000}>Dưới 5 triệu</option>
+                  <option value={10000000}>Dưới 10 triệu</option>
+                  <option value={50000000}>Tất cả mức giá</option>
                 </select>
               </div>
 
@@ -763,7 +782,7 @@ function App() {
                       <div className="engraving-input-wrap fade-in">
                         <input type="text" maxLength="15" placeholder="Nhập tên bạn muốn khắc..."
                           value={engravingText} onChange={e => setEngravingText(e.target.value)} />
-                        <p style={{ fontSize: '0.7rem', color: '#888', marginTop: '0.5rem' }}>Tối đa 15 ký tự. Ví dụ: "Kim Hoang", "Love"...</p>
+                        <p style={{ fontSize: '0.7rem', color: '#888', marginTop: '0.5rem' }}>Tối đa 15 ký tự. Ví dụ: &quot;Kim Hoang&quot;, &quot;Love&quot;...</p>
                       </div>
                     )}
                   </div>
@@ -1220,7 +1239,7 @@ function App() {
               <div style={{ flex: 1 }}>
                 <h4 className="brand-font" style={{ fontSize: '0.95rem' }}>{item.name}</h4>
                 <p style={{ color: 'var(--accent-gold)', fontSize: '0.85rem' }}>{vnd(item.price)} · SL: {item.quantity}</p>
-                {item.engraving && <p style={{ fontSize: '0.7rem', color: '#666', fontStyle: 'italic' }}>🖊️ Khắc: "{item.engraving}"</p>}
+                {item.engraving && <p style={{ fontSize: '0.7rem', color: '#666', fontStyle: 'italic' }}>🖊️ Khắc: &quot;{item.engraving}&quot;</p>}
               </div>
               <button onClick={() => removeFromCart(item.id)} style={{ background: 'none', border: 'none', color: '#e74c3c', cursor: 'pointer', alignSelf: 'center', fontSize: '0.8rem' }}>Xóa</button>
             </div>
